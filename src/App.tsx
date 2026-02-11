@@ -1,21 +1,22 @@
-import { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
-import { Login } from './components/Login';
-import { Sidebar } from './components/Sidebar';
-import { Dashboard } from './components/Dashboard';
-import { Cases } from './components/Cases';
-import { Evidence } from './components/Evidence';
-import { Logs } from './components/Logs';
-import { Files } from './components/Files';
+import { useState, useEffect } from "react";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import { Login } from "./components/Login";
+import { Sidebar } from "./components/Sidebar";
+import { Dashboard } from "./components/Dashboard";
+import { Cases } from "./components/Cases";
+import { Evidence } from "./components/Evidence";
+import { Logs } from "./components/Logs";
+import { Files } from "./components/Files";
+import { MyCases } from "./components/MyCases";
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [currentView, setCurrentView] = useState("dashboard");
 
   useEffect(() => {
     if (isAuthenticated) {
-      setCurrentView('dashboard');
+      setCurrentView("dashboard");
     }
   }, [isAuthenticated]);
 
@@ -36,15 +37,17 @@ function AppContent() {
 
   const renderView = () => {
     switch (currentView) {
-      case 'dashboard':
+      case "dashboard":
         return <Dashboard />;
-      case 'cases':
+      case "my_cases":
+        return <MyCases />;
+      case "cases":
         return <Cases />;
-      case 'evidence':
+      case "evidence":
         return <Evidence />;
-      case 'logs':
+      case "logs":
         return <Logs />;
-      case 'files':
+      case "files":
         return <Files />;
       default:
         return <Dashboard />;
@@ -54,10 +57,8 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
       <Sidebar currentView={currentView} onNavigate={setCurrentView} />
-      <div className="lg:pl-64">
-        <main className="p-4 sm:p-6 lg:p-8 pt-20 lg:pt-8">
-          {renderView()}
-        </main>
+      <div className="lg:pl-80">
+        <main className="p-4 sm:p-6 lg:p-8 pt-20 lg:pt-8">{renderView()}</main>
       </div>
     </div>
   );

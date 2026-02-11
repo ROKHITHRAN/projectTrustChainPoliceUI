@@ -33,6 +33,7 @@ export const Cases = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "evidence" | "logs">(
     "overview",
   );
+  const [isCreating, setIsCreating] = useState(false);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -44,6 +45,7 @@ export const Cases = () => {
     priority: "MEDIUM",
     caseType: 1,
     location: "Chennai",
+    status: "OPEN",
   });
 
   const [editCase, setEditCase] = useState<UpdateCaseRequest>({});
@@ -58,7 +60,6 @@ export const Cases = () => {
     try {
       setIsLoading(true);
       const data = await caseService.getAllCases();
-      console.log(data.length);
 
       setCases(data);
       setError("");
@@ -78,6 +79,8 @@ export const Cases = () => {
         evidenceService.getEvidenceByCase(caseItem.id),
         logService.getLogsByCase(caseItem.id),
       ]);
+      console.log(logs);
+
       setCaseEvidence(evidence);
       setCaseLogs(logs);
     } catch (err) {
@@ -99,18 +102,21 @@ export const Cases = () => {
   // };
 
   const handleCreateCase = async () => {
+    if (isCreating) return; // prevent double click
+
     try {
+      setIsCreating(true);
+
       const payload = {
         ...newCase,
-
-        // auto-injected
-        policeName: user.userName,
+        policeName: user!.userName,
         detailsHash:
           "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       };
 
       await caseService.createCase(payload);
 
+      // ✅ success
       setIsCreateModalOpen(false);
       setNewCase({
         title: "",
@@ -118,12 +124,15 @@ export const Cases = () => {
         priority: "MEDIUM",
         caseType: 1,
         location: "Chennai",
+        status: "OPEN",
       });
 
       loadCases();
     } catch (err) {
       const error = err as ApiError;
       setError(error.message);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -215,37 +224,39 @@ export const Cases = () => {
             <ArrowLeft size={20} />
             Back to Cases
           </button>
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                setEditCase({
-                  title: selectedCase.title,
-                  description: selectedCase.description,
-                  status: selectedCase.status,
-                  priority: selectedCase.priority,
-                });
-                setIsEditModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <Edit size={16} />
-              Edit
-            </button>
-            <button
-              onClick={() => setIsAssignModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              <UserPlus size={16} />
-              Assign
-            </button>
-            <button
-              onClick={() => handleDeleteCase(selectedCase.id)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-            >
-              <Trash2 size={16} />
-              Delete
-            </button>
-          </div>
+          {selectedCase.assignedPoliceUids.includes(user!.uid) && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setEditCase({
+                    title: selectedCase.title,
+                    description: selectedCase.description,
+                    status: selectedCase.status,
+                    priority: selectedCase.priority,
+                  });
+                  setIsEditModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <Edit size={16} />
+                Edit
+              </button>
+              <button
+                onClick={() => setIsAssignModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                <UserPlus size={16} />
+                Assign
+              </button>
+              <button
+                onClick={() => handleDeleteCase(selectedCase.id)}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                <Trash2 size={16} />
+                Delete
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -306,15 +317,15 @@ export const Cases = () => {
                     Created At
                   </h4>
                   <p className="text-gray-900 dark:text-white">
-                    {new Date(selectedCase.createdAt).toLocaleString()}
+                    {new Date(selectedCase.timestamp!).toLocaleString()}
                   </p>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Updated At
+                    Location
                   </h4>
                   <p className="text-gray-900 dark:text-white">
-                    {new Date(selectedCase.updatedAt).toLocaleString()}
+                    {selectedCase.location}
                   </p>
                 </div>
                 {selectedCase.policeName && (
@@ -353,8 +364,11 @@ export const Cases = () => {
                             {evidence.description}
                           </p>
                           <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">
-                            Collected:{" "}
+                            Collected At:{" "}
                             {new Date(evidence.collectedAt).toLocaleString()}
+                          </p>
+                          <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">
+                            Found At: {evidence.locationFound}
                           </p>
                         </div>
                         {evidence.ipfsHash && (
@@ -458,6 +472,20 @@ export const Cases = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Case Type
+              </label>
+              <input
+                type="number"
+                value={newCase.caseType}
+                onChange={(e) =>
+                  setNewCase({ ...newCase, caseType: Number(e.target.value) })
+                }
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Priority
               </label>
               <select
@@ -537,13 +565,13 @@ export const Cases = () => {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Cases
         </h1>
-        <button
+        {/* <button
           onClick={() => setIsCreateModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus size={20} />
           Create Case
-        </button>
+        </button> */}
       </div>
 
       {error && (
@@ -579,7 +607,7 @@ export const Cases = () => {
           {filteredCases.map((caseItem) => (
             <div
               key={caseItem.id}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow flex flex-col"
             >
               <div className="flex justify-between items-start mb-3">
                 <div>
@@ -599,7 +627,7 @@ export const Cases = () => {
               <p className="text-gray-700 dark:text-gray-300 text-sm mb-4 line-clamp-2">
                 {caseItem.description}
               </p>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mt-auto">
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(caseItem.status)}`}
                 >
@@ -672,6 +700,33 @@ export const Cases = () => {
               <option value="CRITICAL">Critical</option>
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Case Type
+            </label>
+            <input
+              type="number"
+              value={newCase.caseType}
+              onChange={(e) =>
+                setNewCase({ ...newCase, caseType: Number(e.target.value) })
+              }
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Location
+            </label>
+            <input
+              type="text"
+              value={newCase.location}
+              onChange={(e) =>
+                setNewCase({ ...newCase, location: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Enter location"
+            />
+          </div>
           <div className="flex justify-end gap-2">
             <button
               onClick={() => setIsCreateModalOpen(false)}
@@ -681,9 +736,42 @@ export const Cases = () => {
             </button>
             <button
               onClick={handleCreateCase}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              disabled={isCreating}
+              className={`px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2
+                ${
+                  isCreating
+                    ? "bg-blue-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }
+              `}
             >
-              Create Case
+              {isCreating ? (
+                <>
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
+                  </svg>
+                  Creating...
+                </>
+              ) : (
+                "Create Case"
+              )}
             </button>
           </div>
         </div>

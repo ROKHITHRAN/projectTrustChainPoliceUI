@@ -1,14 +1,20 @@
-import api from './api';
-import { Case, CreateCaseRequest, UpdateCaseRequest, AssignPoliceRequest } from '../types';
+import api from "./api";
+import {
+  Case,
+  CreateCaseRequest,
+  UpdateCaseRequest,
+  AssignPoliceRequest,
+  Officer,
+} from "../types";
 
 export const caseService = {
   async createCase(data: CreateCaseRequest): Promise<Case> {
-    const response = await api.post<Case>('/api/cases', data);
+    const response = await api.post<Case>("/api/cases", data);
     return response.data;
   },
 
   async getAllCases(): Promise<Case[]> {
-    const response = await api.get<Case[]>('/api/cases');
+    const response = await api.get<Case[]>("/api/cases");
     return response.data;
   },
 
@@ -27,7 +33,18 @@ export const caseService = {
   },
 
   async assignPolice(caseId: string, data: AssignPoliceRequest): Promise<Case> {
-    const response = await api.post<Case>(`/api/cases/${caseId}/assign-police`, data);
+    const response = await api.post<Case>(
+      `/api/cases/${caseId}/assign-police`,
+      data,
+    );
+    return response.data;
+  },
+
+  async getAvailableOfficers(caseId: string): Promise<Officer[]> {
+    const response = await api.get<Officer[]>(
+      `/api/cases/${caseId}/getOfficers`,
+    );
+
     return response.data;
   },
 };

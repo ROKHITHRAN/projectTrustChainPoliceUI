@@ -8,11 +8,11 @@ import {
   Moon,
   Sun,
   Menu,
-  X
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { useState } from 'react';
+  X,
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import { useState } from "react";
 
 interface SidebarProps {
   currentView: string;
@@ -25,11 +25,12 @@ export const Sidebar = ({ currentView, onNavigate }: SidebarProps) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'cases', label: 'Cases', icon: FolderOpen },
-    { id: 'evidence', label: 'Evidence', icon: FileText },
-    { id: 'logs', label: 'Logs', icon: ScrollText },
-    { id: 'files', label: 'Files', icon: Upload },
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { id: "my_cases", label: "My Cases", icon: FolderOpen },
+    { id: "cases", label: "Cases", icon: FolderOpen },
+    { id: "evidence", label: "Evidence", icon: FileText },
+    { id: "logs", label: "Logs", icon: ScrollText },
+    { id: "files", label: "Files", icon: Upload },
   ];
 
   const toggleMobile = () => setIsMobileOpen(!isMobileOpen);
@@ -44,13 +45,15 @@ export const Sidebar = ({ currentView, onNavigate }: SidebarProps) => {
       </button>
 
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out lg:transform-none ${
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        className={`fixed inset-y-0 left-0 z-40 w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out lg:transform-none ${
+          isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Police Portal</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Police Portal
+            </h1>
           </div>
 
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -66,8 +69,8 @@ export const Sidebar = ({ currentView, onNavigate }: SidebarProps) => {
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
                 >
                   <Icon size={20} />
@@ -82,8 +85,10 @@ export const Sidebar = ({ currentView, onNavigate }: SidebarProps) => {
               onClick={toggleTheme}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-              <span className="font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+              <span className="font-medium">
+                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </span>
             </button>
             <button
               onClick={logout}

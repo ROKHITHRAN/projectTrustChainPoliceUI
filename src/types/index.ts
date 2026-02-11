@@ -36,13 +36,16 @@ export interface Case {
 
   createdAt: number;
   updatedAt: number;
+  timestamp?: string;
+
+  assignedPoliceUids: string[];
 }
 
 export interface CreateCaseRequest {
   title: string;
   description: string;
   priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-
+  status: "OPEN" | "IN_PROGRESS" | "CLOSED";
   caseType: number;
   location: string;
 }
@@ -55,15 +58,16 @@ export interface UpdateCaseRequest {
 }
 
 export interface AssignPoliceRequest {
-  officerId: string;
+  policeAddress: string;
 }
 
 export interface Evidence {
   id: string;
   caseId: string;
-  type: string;
+  eType: string;
   description: string;
   ipfsHash?: string;
+  locationFound: string;
   collectedAt: string;
   collectedBy: string;
   createdAt: string;
@@ -71,45 +75,68 @@ export interface Evidence {
 }
 
 export interface CreateEvidenceRequest {
-  type: string;
+  eType: number; // maps to eType
   description: string;
+  collectedAt: string; // UI only (Firestore)
+  locationFound?: string;
+
+  // derived (after upload)
   ipfsHash?: string;
-  collectedAt: string;
+  fileHash?: string;
 }
 
 export interface UpdateEvidenceRequest {
   type?: string;
   description?: string;
   ipfsHash?: string;
+  locationFound?: string;
 }
 
 export interface EvidenceHistory {
   id: string;
-  evidenceId: string;
-  action: string;
-  changes: Record<string, unknown>;
+  caseId: string;
+  eType: number;
+  version: number;
+  description: string;
+  locationFound: string;
+  ipfsHash: string;
+  fileHash: string;
+  collectedBy: string;
+  timestamp: string; // ISO string in frontend
+  active: boolean;
+  action: number;
   performedBy: string;
-  performedAt: string;
+  performedByRole: string;
 }
 
 export interface AccessLog {
-  id: string;
+  id: string; // derived
   caseId: string;
-  action: string;
-  performedBy: string;
-  performedByRole: string;
-  timestamp: string;
-  details?: Record<string, unknown>;
+  action: "READ" | "CREATE" | "UPDATE" | "DELETE";
+  performedBy: string; // wallet address
+  performedByRole: string; // derived (POLICE)
+  timestamp: string; // ISO string
+  evidenceId?: string;
+  details?: string;
 }
 
 export interface UploadFileResponse {
   ipfsHash: string;
   filename: string;
-  size: number;
+  fileHash: string;
 }
 
 export interface ApiError {
   message: string;
   status: number;
   errors?: Record<string, string[]>;
+}
+
+export interface Officer {
+  uid: string;
+  name: string;
+  email: string;
+  walletAddress: string;
+  role: "POLICE";
+  createdAt: number;
 }
