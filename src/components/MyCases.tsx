@@ -21,6 +21,7 @@ import {
   UpdateEvidenceRequest,
   EvidenceHistory,
   Officer,
+  User,
 } from "../types";
 import { Modal } from "./Modal";
 import { useAuth } from "../context/AuthContext";
@@ -67,6 +68,9 @@ export const MyCases = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isViewing, setIsViewing] = useState(false);
 
   const [editCase, setEditCase] = useState<UpdateCaseRequest>({});
 
@@ -194,14 +198,19 @@ export const MyCases = () => {
   };
 
   const handleDeleteCase = async (caseId: string) => {
+    if (isDeleting) return;
+
     if (!confirm("Are you sure you want to delete this case?")) return;
     try {
+      setIsDeleting(true);
       await caseService.deleteCase(caseId);
       loadCases();
       setSelectedCase(null);
     } catch (err) {
       const error = err as ApiError;
       setError(error.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -293,6 +302,9 @@ export const MyCases = () => {
     fallbackName = "evidence.pdf",
   ) => {
     try {
+      if (isDownloading) return;
+
+      setIsDownloading(true);
       const response = await fileService.downloadFile(ipfsHash);
 
       const contentType =
@@ -314,6 +326,8 @@ export const MyCases = () => {
     } catch (err) {
       const error = err as ApiError;
       setError(error.message || "File download failed");
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -339,8 +353,9 @@ export const MyCases = () => {
   };
 
   const loadEvidenceHistory = async (evidenceId: string) => {
-    if (!selectedCase) return;
+    if (!selectedCase || isViewing) return;
     try {
+      setIsViewing(true);
       const history = await evidenceService.getEvidenceHistory(
         selectedCase.id,
         evidenceId,
@@ -350,6 +365,8 @@ export const MyCases = () => {
     } catch (err) {
       const error = err as ApiError;
       setError(error.message);
+    } finally {
+      setIsViewing(false);
     }
   };
 
@@ -361,6 +378,21 @@ export const MyCases = () => {
     } catch (err) {
       const error = err as ApiError;
       setError(error.message);
+    }
+  };
+
+  const handleDeleteEvidence = async (evidenceId: string) => {
+    if (!selectedCase || isDeleting) return;
+    if (!confirm("Are you sure you want to delete this evidence?")) return;
+    try {
+      setIsDeleting(true);
+      await evidenceService.deleteEvidence(selectedCase!.id, evidenceId);
+      loadCaseDetails(selectedCase!);
+    } catch (err) {
+      const error = err as ApiError;
+      setError(error.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -394,7 +426,6 @@ export const MyCases = () => {
     };
     return colors[status as keyof typeof colors] || colors.OPEN;
   };
-  console.log(evidenceHistory);
 
   if (selectedCase) {
     return (
@@ -444,10 +475,44 @@ export const MyCases = () => {
               </button>
               <button
                 onClick={() => handleDeleteCase(selectedCase.id)}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                disabled={isDeleting}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-200
+                ${
+                  isDeleting
+                    ? "bg-red-400 dark:bg-red-800 text-white cursor-not-allowed"
+                    : "bg-red-600 hover:bg-red-700 text-white"
+                }
+              `}
               >
-                <Trash2 size={16} />
-                Delete
+                {isDeleting ? (
+                  <>
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8z"
+                      />
+                    </svg>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    Delete
+                  </>
+                )}
               </button>
             </div>
           )}
@@ -569,18 +634,81 @@ export const MyCases = () => {
                           <div className="flex flex-col gap-2 w-28">
                             <button
                               onClick={() => loadEvidenceHistory(evidence.id)}
-                              className="w-full text-center text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400 py-1 rounded"
+                              disabled={isViewing}
+                              className={`w-full flex items-center justify-center gap-2 text-xs py-1 rounded transition-all duration-200
+                              ${
+                                isViewing
+                                  ? "bg-orange-200 dark:bg-orange-900/50 text-orange-500 cursor-not-allowed"
+                                  : "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-red-900/50"
+                              }
+                            `}
                             >
-                              View History
+                              {isViewing ? (
+                                <>
+                                  <svg
+                                    className="animate-spin h-3 w-3"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    />
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8v8z"
+                                    />
+                                  </svg>
+                                  Loading...
+                                </>
+                              ) : (
+                                "View History"
+                              )}{" "}
                             </button>
                             {evidence.ipfsHash && (
                               <button
-                                className="w-full text-center text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 py-1 rounded"
                                 onClick={() =>
                                   handleDownloadEvidenceFile(evidence.ipfsHash!)
                                 }
+                                className={`w-full flex items-center justify-center gap-2 text-xs py-1 rounded transition-all duration-200
+                              ${
+                                isDownloading
+                                  ? "bg-green-200 dark:bg-green-900/50 text-green-500 cursor-not-allowed"
+                                  : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50"
+                              }
+                            `}
                               >
-                                Download
+                                {isDownloading ? (
+                                  <>
+                                    <svg
+                                      className="animate-spin h-3 w-3"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                    >
+                                      <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                      />
+                                      <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8v8z"
+                                      />
+                                    </svg>
+                                    Loading...
+                                  </>
+                                ) : (
+                                  "Download"
+                                )}{" "}
                               </button>
                             )}
                           </div>
@@ -596,13 +724,48 @@ export const MyCases = () => {
                                 });
                                 setIsEditEvidenceModalOpen(true);
                               }}
-                              className="w-full text-center text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 py-1 rounded"
+                              className="w-full text-center text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 py-1 rounded"
                             >
                               Edit
                             </button>
-                            <span className="w-full text-center text-xs bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 py-1 rounded">
-                              Delete
-                            </span>
+                            <button
+                              onClick={() => handleDeleteEvidence(evidence.id)}
+                              disabled={isDeleting}
+                              className={`w-full flex items-center justify-center gap-2 text-xs py-1 rounded transition-all duration-200
+                              ${
+                                isDeleting
+                                  ? "bg-red-200 dark:bg-red-900/50 text-red-500 cursor-not-allowed"
+                                  : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50"
+                              }
+                            `}
+                            >
+                              {isDeleting ? (
+                                <>
+                                  <svg
+                                    className="animate-spin h-3 w-3"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    />
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8v8z"
+                                    />
+                                  </svg>
+                                  Deleting...
+                                </>
+                              ) : (
+                                "Delete"
+                              )}
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -922,7 +1085,7 @@ export const MyCases = () => {
                                   Action : {Actions[history.action]}
                                 </p>
                                 <p className="text-xs text-muted-foreground dark:text-white">
-                                  Performed by {history.performedBy}
+                                  Performed by {history.performedByName}
                                 </p>
                               </div>
 
@@ -982,7 +1145,7 @@ export const MyCases = () => {
                   No logs found
                 </p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
                   {caseLogs.map((log) => (
                     <div
                       key={log.id}
@@ -994,7 +1157,7 @@ export const MyCases = () => {
                             {log.action}
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            by {log.performedBy} ({log.performedByRole})
+                            by {log.performedByName} ({log.performedByRole})
                           </p>
                         </div>
                         <span className="text-xs text-gray-500 dark:text-gray-500">
@@ -1113,51 +1276,6 @@ export const MyCases = () => {
         </Modal>
 
         {/* Assign Police */}
-        {/* <Modal
-          isOpen={isAssignModalOpen}
-          onClose={() => setIsAssignModalOpen(false)}
-          title="Assign Police Officer"
-          size="lg"
-        >
-          <div className="space-y-4">
-            {officers.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-                No officer found
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {officers.map((officer) => (
-                  <div
-                    key={officer.uid}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white">
-                          {officer.name}
-                        </h4>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                          {officer.email}
-                        </p>
-                        <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">
-                          Joined At:{" "}
-                          {new Date(officer.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="flex">
-                          <button className="w-full text-center text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400 py-1 rounded">
-                            Assign To case
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Modal> */}
         <Modal
           isOpen={isAssignModalOpen}
           onClose={() => setIsAssignModalOpen(false)}
@@ -1333,131 +1451,6 @@ export const MyCases = () => {
           ))}
         </div>
       )}
-      {/* <Modal
-        isOpen={isCreateEvidenceModalOpen}
-        onClose={() => setIsCreateEvidenceModalOpen(false)}
-        title="Add New Evidence"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Evidence Type
-            </label>
-            <input
-              type="number"
-              value={newEvidence.eType}
-              onChange={(e) =>
-                setNewEvidence({
-                  ...newEvidence,
-                  eType: Number(e.target.value),
-                })
-              }
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description
-            </label>
-            <textarea
-              value={newEvidence.description}
-              onChange={(e) =>
-                setNewEvidence({ ...newEvidence, description: e.target.value })
-              }
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="Detailed description of the evidence"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Location Found
-            </label>
-            <input
-              type="text"
-              value={newEvidence.locationFound}
-              onChange={(e) =>
-                setNewEvidence({
-                  ...newEvidence,
-                  locationFound: e.target.value,
-                })
-              }
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="e.g., Physical, Digital, Witness Statement"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Collected At
-            </label>
-            <input
-              type="datetime-local"
-              value={newEvidence.collectedAt}
-              onChange={(e) =>
-                setNewEvidence({ ...newEvidence, collectedAt: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Evidence File
-            </label>
-            <input
-              type="file"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setNewEvidence({ ...newEvidence, file });
-                }
-              }}
-              className="w-full text-sm text-gray-700 dark:text-gray-300"
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={handleCreateEvidence}
-              disabled={isCreating}
-              className={`px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2
-                ${
-                  isCreating
-                    ? "bg-blue-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
-                }
-              `}
-            >
-              {isCreating ? (
-                <>
-                  <svg
-                    className="animate-spin h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                    />
-                  </svg>
-                  Adding...
-                </>
-              ) : (
-                "Add Evidence"
-              )}
-            </button>
-          </div>
-        </div>
-      </Modal> */}
-
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
@@ -1591,33 +1584,4 @@ export const MyCases = () => {
     </div>
   );
 };
-
-//  evidenceHistory.map((history) => (
-//    <div
-//      key={history.id}
-//      className="border-l-4 border-blue-500 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-r"
-//    >
-//      <div className="flex justify-between items-start mb-2">
-//        <p className="font-semibold text-gray-900 dark:text-white">
-//          {history.collectedBy}
-//        </p>
-//        <span className="text-xs text-gray-500 dark:text-gray-500">
-//          {new Date(history.performedAt).toLocaleString()}
-//        </span>
-//      </div>
-//      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-//        By: {history.performedBy}
-//      </p>
-//      {history.changes && Object.keys(history.changes).length > 0 && (
-//        <div className="bg-white dark:bg-gray-800 rounded p-3 mt-2">
-//          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-//            Changes:
-//          </p>
-//          <pre className="text-xs text-gray-800 dark:text-gray-200 overflow-auto">
-//            {JSON.stringify(history.changes, null, 2)}
-//          </pre>
-//        </div>
-//      )}
-//    </div>
-//  ));
 const Actions = ["READ", "CREATE", "UPDATE", "DELETE"];

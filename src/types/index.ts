@@ -107,6 +107,8 @@ export interface EvidenceHistory {
   action: number;
   performedBy: string;
   performedByRole: string;
+  performedByName: string;
+  performedByEmail: string;
 }
 
 export interface AccessLog {
@@ -118,6 +120,8 @@ export interface AccessLog {
   timestamp: string; // ISO string
   evidenceId?: string;
   details?: string;
+  performedByName: string;
+  performedByEmail: string;
 }
 
 export interface UploadFileResponse {
