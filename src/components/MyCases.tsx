@@ -89,6 +89,7 @@ export const MyCases = () => {
   const [officers, setOfficers] = useState<Officer[]>([]);
 
   const { user } = useAuth();
+  console.log(isCreateEvidenceModalOpen);
 
   useEffect(() => {
     loadCases();
@@ -297,14 +298,49 @@ export const MyCases = () => {
     }
   };
 
+  // const handleDownloadEvidenceFile = async (
+  //   ipfsHash: string,
+  //   fallbackName = "evidence.pdf",
+  // ) => {
+  //   try {
+  //     if (isDownloading) return;
+
+  //     setIsDownloading(true);
+  //     const response = await fileService.downloadFile(ipfsHash);
+
+  //     const contentType =
+  //       response.headers["content-type"] || "application/octet-stream";
+
+  //     const blob = new Blob([response.data], { type: contentType });
+
+  //     const url = window.URL.createObjectURL(blob);
+  //     const link = document.createElement("a");
+
+  //     link.href = url;
+  //     link.download = fallbackName;
+
+  //     document.body.appendChild(link);
+  //     link.click();
+
+  //     link.remove();
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (err) {
+  //     const error = err as ApiError;
+  //     setError(error.message || "File download failed");
+  //   } finally {
+  //     setIsDownloading(false);
+  //   }
+  // };
+
   const handleDownloadEvidenceFile = async (
     ipfsHash: string,
-    fallbackName = "evidence.pdf",
+    fallbackName = "evidence",
   ) => {
     try {
       if (isDownloading) return;
 
       setIsDownloading(true);
+
       const response = await fileService.downloadFile(ipfsHash);
 
       const contentType =
@@ -312,11 +348,16 @@ export const MyCases = () => {
 
       const blob = new Blob([response.data], { type: contentType });
 
+      // 🔥 Determine extension automatically
+      const extension = contentType.split("/")[1] || "bin";
+
+      const fileName = `${fallbackName}.${extension}`;
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
 
       link.href = url;
-      link.download = fallbackName;
+      link.download = fileName;
 
       document.body.appendChild(link);
       link.click();
@@ -604,9 +645,141 @@ export const MyCases = () => {
           {activeTab === "evidence" && (
             <div className="space-y-4">
               {caseEvidence.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-                  No evidence found
-                </p>
+                <>
+                  <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+                    No evidence found
+                  </p>
+                  <Modal
+                    isOpen={isCreateEvidenceModalOpen}
+                    onClose={() => setIsCreateEvidenceModalOpen(false)}
+                    title="Add New Evidence"
+                  >
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Evidence Type
+                        </label>
+                        <input
+                          type="number"
+                          value={newEvidence.eType}
+                          onChange={(e) =>
+                            setNewEvidence({
+                              ...newEvidence,
+                              eType: Number(e.target.value),
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Description
+                        </label>
+                        <textarea
+                          value={newEvidence.description}
+                          onChange={(e) =>
+                            setNewEvidence({
+                              ...newEvidence,
+                              description: e.target.value,
+                            })
+                          }
+                          rows={4}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="Detailed description of the evidence"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Location Found
+                        </label>
+                        <input
+                          type="text"
+                          value={newEvidence.locationFound}
+                          onChange={(e) =>
+                            setNewEvidence({
+                              ...newEvidence,
+                              locationFound: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="e.g., Physical, Digital, Witness Statement"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Collected At
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={newEvidence.collectedAt}
+                          onChange={(e) =>
+                            setNewEvidence({
+                              ...newEvidence,
+                              collectedAt: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Evidence File
+                        </label>
+                        <input
+                          type="file"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setNewEvidence({ ...newEvidence, file });
+                            }
+                          }}
+                          className="w-full text-sm text-gray-700 dark:text-gray-300"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={handleCreateEvidence}
+                          disabled={isCreating}
+                          className={`px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2
+                ${
+                  isCreating
+                    ? "bg-blue-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }
+              `}
+                        >
+                          {isCreating ? (
+                            <>
+                              <svg
+                                className="animate-spin h-4 w-4 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                />
+                              </svg>
+                              Adding...
+                            </>
+                          ) : (
+                            "Add Evidence"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </Modal>
+                </>
               ) : (
                 <div className="space-y-3">
                   {caseEvidence.map((evidence) => (

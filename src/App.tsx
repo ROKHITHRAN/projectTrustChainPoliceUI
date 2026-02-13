@@ -5,9 +5,6 @@ import { Login } from "./components/Login";
 import { Sidebar } from "./components/Sidebar";
 import { Dashboard } from "./components/Dashboard";
 import { Cases } from "./components/Cases";
-import { Evidence } from "./components/Evidence";
-import { Logs } from "./components/Logs";
-import { Files } from "./components/Files";
 import { MyCases } from "./components/MyCases";
 
 function AppContent() {
@@ -43,12 +40,6 @@ function AppContent() {
         return <MyCases />;
       case "cases":
         return <Cases />;
-      case "evidence":
-        return <Evidence />;
-      case "logs":
-        return <Logs />;
-      case "files":
-        return <Files />;
       default:
         return <Dashboard />;
     }
