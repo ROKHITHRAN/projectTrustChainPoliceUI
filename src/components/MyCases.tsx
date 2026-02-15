@@ -16,6 +16,7 @@ import {
   CreateCaseRequest,
   UpdateCaseRequest,
   Evidence,
+  EvidenceType,
   AccessLog,
   ApiError,
   UpdateEvidenceRequest,
@@ -89,7 +90,6 @@ export const MyCases = () => {
   const [officers, setOfficers] = useState<Officer[]>([]);
 
   const { user } = useAuth();
-  console.log(isCreateEvidenceModalOpen);
 
   useEffect(() => {
     loadCases();
@@ -376,6 +376,7 @@ export const MyCases = () => {
     if (!selectedCase?.id || !selectedEvidence || isEditing) return;
     try {
       setIsEditing(true);
+
       await evidenceService.updateEvidence(
         selectedCase.id,
         selectedEvidence.id,
@@ -659,8 +660,7 @@ export const MyCases = () => {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Evidence Type
                         </label>
-                        <input
-                          type="number"
+                        <select
                           value={newEvidence.eType}
                           onChange={(e) =>
                             setNewEvidence({
@@ -669,7 +669,13 @@ export const MyCases = () => {
                             })
                           }
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                        />
+                        >
+                          {EvidenceType.map((label, idx) => (
+                            <option key={label} value={idx}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -790,7 +796,7 @@ export const MyCases = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-semibold text-gray-900 dark:text-white">
-                            {evidence.eType}
+                            {EvidenceType[evidence.eType] || evidence.eType}
                           </h4>
                           <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
                             {evidence.description}
@@ -891,7 +897,7 @@ export const MyCases = () => {
                               onClick={() => {
                                 setSelectedEvidence(evidence);
                                 setEditEvidence({
-                                  type: evidence.eType,
+                                  type: Number(evidence.eType),
                                   description: evidence.description,
                                   locationFound: evidence.locationFound,
                                 });
@@ -955,8 +961,7 @@ export const MyCases = () => {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Evidence Type
                         </label>
-                        <input
-                          type="number"
+                        <select
                           value={newEvidence.eType}
                           onChange={(e) =>
                             setNewEvidence({
@@ -965,7 +970,13 @@ export const MyCases = () => {
                             })
                           }
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                        />
+                        >
+                          {EvidenceType.map((label, idx) => (
+                            <option key={label} value={idx}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1086,17 +1097,26 @@ export const MyCases = () => {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Evidence Type
                         </label>
-                        <input
-                          type="text"
-                          value={editEvidence.type || ""}
+                        <select
+                          value={
+                            typeof editEvidence.type === "number"
+                              ? editEvidence.type
+                              : 0
+                          }
                           onChange={(e) =>
                             setEditEvidence({
                               ...editEvidence,
-                              type: e.target.value,
+                              type: Number(e.target.value),
                             })
                           }
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                        />
+                        >
+                          {EvidenceType.map((label, idx) => (
+                            <option key={label} value={idx}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1288,7 +1308,7 @@ export const MyCases = () => {
                                   Evidence Type
                                 </p>
                                 <span className="inline-block text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-md">
-                                  {history.eType}
+                                  {EvidenceType[history.eType] || history.eType}
                                 </span>
                               </div>
 

@@ -64,7 +64,7 @@ export interface AssignPoliceRequest {
 export interface Evidence {
   id: string;
   caseId: string;
-  eType: string;
+  eType: number;
   description: string;
   ipfsHash?: string;
   locationFound: string;
@@ -86,7 +86,7 @@ export interface CreateEvidenceRequest {
 }
 
 export interface UpdateEvidenceRequest {
-  type?: string;
+  type?: number;
   description?: string;
   ipfsHash?: string;
   locationFound?: string;
